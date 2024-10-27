@@ -1,0 +1,37 @@
+{
+	"name": "ds_aws_practice",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_amazonS3",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AmazonS3Location",
+				"bucketName": "telecom-adf",
+				"folderPath": "telecom/dim_cities",
+				"fileName": "cities.csv"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "city_code",
+				"type": "String"
+			},
+			{
+				"name": "city_name",
+				"type": "String"
+			},
+			{
+				"name": "timestamp",
+				"type": "String"
+			}
+		]
+	}
+}

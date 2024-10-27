@@ -1,0 +1,220 @@
+{
+	"name": "3_pl_intermediate_to_curated",
+	"properties": {
+		"activities": [
+			{
+				"name": "curated_lookup",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureDatabricksDeltaLakeSource",
+						"query": {
+							"value": "@concat('select param.*, control.* from ',pipeline().parameters.metadata_database,'.tbl_source_control as control, ',pipeline().parameters.metadata_database,'.tbl_parameters as param where param.job_id=',pipeline().parameters.job_id)",
+							"type": "Expression"
+						}
+					},
+					"dataset": {
+						"referenceName": "ds_metadata_adb_deltalake",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "intermediate_to_curated_tables",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "curated_lookup",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/databricks_notebooks/intermediate_to_curated_data_insertion",
+					"baseParameters": {
+						"env": {
+							"value": "@pipeline().globalParameters.env",
+							"type": "Expression"
+						},
+						"intermediate_schema": {
+							"value": "@activity('curated_lookup').output.value[0].intermediate_schema",
+							"type": "Expression"
+						},
+						"curated_schema": {
+							"value": "@activity('curated_lookup').output.value[0].curated_schema",
+							"type": "Expression"
+						},
+						"curated_table": {
+							"value": "@activity('curated_lookup').output.value[0].curated_tbl",
+							"type": "Expression"
+						},
+						"curated_query": {
+							"value": "@activity('curated_lookup').output.value[0].curated_query",
+							"type": "Expression"
+						},
+						"loadId": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks_compute",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "log_success_curated_upsert",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "intermediate_to_curated_tables",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/databricks_notebooks/log_record_tbl_insert",
+					"baseParameters": {
+						"env": {
+							"value": "@pipeline().globalParameters.env",
+							"type": "Expression"
+						},
+						"storage_account_name": {
+							"value": "@activity('curated_lookup').output.value[0].storage_account",
+							"type": "Expression"
+						},
+						"pipelineName": {
+							"value": "@pipeline().Pipeline",
+							"type": "Expression"
+						},
+						"logMessage": {
+							"value": "@concat('Upserted ',activity('intermediate_to_curated_tables').output.runOutput[0],' in ',activity('curated_lookup').output.value[0].curated_tbl)",
+							"type": "Expression"
+						},
+						"status": {
+							"value": "Success",
+							"type": "Expression"
+						},
+						"triggerType": {
+							"value": "@pipeline().TriggerType",
+							"type": "Expression"
+						},
+						"loadId": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						},
+						"logTimestamp": {
+							"value": "@formatDateTime(convertFromUtc(utcNow(),'India Standard Time'), 'yyyy-MM-dd HH:mm:ss')",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks_compute",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "log_failure_curated_upsert",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "intermediate_to_curated_tables",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/databricks_notebooks/log_record_tbl_insert",
+					"baseParameters": {
+						"env": {
+							"value": "@pipeline().globalParameters.env",
+							"type": "Expression"
+						},
+						"storage_account_name": {
+							"value": "@activity('curated_lookup').output.value[0].storage_account",
+							"type": "Expression"
+						},
+						"pipelineName": {
+							"value": "@pipeline().Pipeline",
+							"type": "Expression"
+						},
+						"logMessage": {
+							"value": "@concat('Error in doing upsert in curated table ',activity('curated_lookup').output.value[0].curated_tbl)",
+							"type": "Expression"
+						},
+						"status": {
+							"value": "failure",
+							"type": "Expression"
+						},
+						"triggerType": {
+							"value": "@pipeline().TriggerType",
+							"type": "Expression"
+						},
+						"loadId": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						},
+						"logTimestamp": {
+							"value": "@formatDateTime(convertFromUtc(utcNow(),'India Standard Time'), 'yyyy-MM-dd HH:mm:ss')",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks_compute",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"metadata_database": {
+				"type": "string",
+				"defaultValue": "metadata_schema"
+			},
+			"job_id": {
+				"type": "string",
+				"defaultValue": "210"
+			}
+		},
+		"annotations": []
+	}
+}

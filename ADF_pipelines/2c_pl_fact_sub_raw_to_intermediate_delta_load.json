@@ -1,0 +1,188 @@
+{
+	"name": "2c_pl_fact_sub_raw_to_intermediate_delta_load",
+	"properties": {
+		"activities": [
+			{
+				"name": "fact_raw_to_intermediate",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/databricks_notebooks/fact_raw_to_intermediate",
+					"baseParameters": {
+						"env": {
+							"value": "@pipeline().globalParameters.env",
+							"type": "Expression"
+						},
+						"raw_schema": {
+							"value": "@pipeline().parameters.metadata_lookup_values[0].raw_schema",
+							"type": "Expression"
+						},
+						"raw_table": {
+							"value": "@pipeline().parameters.metadata_lookup_values[0].raw_tbl",
+							"type": "Expression"
+						},
+						"intermediate_schema": {
+							"value": "@pipeline().parameters.metadata_lookup_values[0].intermediate_schema",
+							"type": "Expression"
+						},
+						"intermediate_table": {
+							"value": "@pipeline().parameters.metadata_lookup_values[0].intermediate_tbl",
+							"type": "Expression"
+						},
+						"intermediate_query": {
+							"value": "@pipeline().parameters.metadata_lookup_values[0].intermediate_query",
+							"type": "Expression"
+						},
+						"aws_last_modified_time": {
+							"value": "@pipeline().parameters.source_file_last_modified_time",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks_compute",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "fact_log_success_raw_to_intermediate",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "fact_raw_to_intermediate",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/databricks_notebooks/log_record_tbl_insert",
+					"baseParameters": {
+						"env": {
+							"value": "@pipeline().globalParameters.env",
+							"type": "Expression"
+						},
+						"storage_account_name": {
+							"value": "@pipeline().parameters.metadata_lookup_values[0].storage_account",
+							"type": "Expression"
+						},
+						"pipelineName": {
+							"value": "@pipeline().Pipeline",
+							"type": "Expression"
+						},
+						"logMessage": {
+							"value": "@concat('Raw file has total rows: ',activity('fact_raw_to_intermediate').output.runOutput[0],' and the fact intermediate table has ',activity('fact_raw_to_intermediate').output.runOutput[1],' affected rows.')",
+							"type": "Expression"
+						},
+						"status": {
+							"value": "Success",
+							"type": "Expression"
+						},
+						"triggerType": {
+							"value": "@pipeline().TriggerType",
+							"type": "Expression"
+						},
+						"loadId": {
+							"value": "@pipeline()?.TriggeredByPipelineRunId",
+							"type": "Expression"
+						},
+						"logTimestamp": {
+							"value": "@formatDateTime(convertFromUtc(utcNow(),'India Standard Time'), 'yyyy-MM-dd HH:mm:ss')",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks_compute",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "fact_log_failure_raw_to_intermediate",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "fact_raw_to_intermediate",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/databricks_notebooks/log_record_tbl_insert",
+					"baseParameters": {
+						"env": {
+							"value": "@pipeline().globalParameters.env",
+							"type": "Expression"
+						},
+						"storage_account_name": {
+							"value": "@pipeline().parameters.metadata_lookup_values[0].storage_account",
+							"type": "Expression"
+						},
+						"pipelineName": {
+							"value": "@pipeline().Pipeline",
+							"type": "Expression"
+						},
+						"logMessage": {
+							"value": "@concat('Error: File not transformed and updated to intermediate container: ',pipeline().parameters.metadata_lookup_values[0].intermediate_tbl)",
+							"type": "Expression"
+						},
+						"status": {
+							"value": "failure",
+							"type": "Expression"
+						},
+						"triggerType": {
+							"value": "@pipeline().TriggerType",
+							"type": "Expression"
+						},
+						"loadId": {
+							"value": "@pipeline()?.TriggeredByPipelineRunId",
+							"type": "Expression"
+						},
+						"logTimestamp": {
+							"value": "@formatDateTime(convertFromUtc(utcNow(),'India Standard Time'), 'yyyy-MM-dd HH:mm:ss')",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks_compute",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"metadata_lookup_values": {
+				"type": "object"
+			},
+			"source_file_last_modified_time": {
+				"type": "string"
+			}
+		},
+		"annotations": []
+	}
+}

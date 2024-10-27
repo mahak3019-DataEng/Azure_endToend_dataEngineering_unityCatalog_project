@@ -1,0 +1,41 @@
+{
+	"name": "ds_output_practice",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_amazonS3",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AmazonS3Location",
+				"bucketName": "telecom-adf",
+				"folderPath": "telecom/dim_cities",
+				"fileName": "cities.csv"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "date",
+				"type": "String"
+			},
+			{
+				"name": "month_name",
+				"type": "String"
+			},
+			{
+				"name": "before/after_5g",
+				"type": "String"
+			},
+			{
+				"name": "time_period",
+				"type": "String"
+			}
+		]
+	}
+}

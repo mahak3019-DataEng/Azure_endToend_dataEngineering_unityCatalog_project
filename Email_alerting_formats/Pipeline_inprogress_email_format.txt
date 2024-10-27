@@ -1,0 +1,43 @@
+{
+    "to":"@{activity('metadata_lookup').output.value[0].email_id}",
+    "subject":" @{concat('[',pipeline().globalParameters.env,']',pipeline().Pipeline,':[InProgress]')}",
+    "email_body":"
+   
+    <!DOCTYPE html>
+<html>
+<body>
+    Hi all,<br/>
+    Please find below the status for @{pipeline().Pipeline}<br/><br/>
+    
+    <table>
+        <tr>
+            <th style='text-align: left;'>Parameters</th>
+            <th style='text-align: left;'>Value</th>
+        </tr>
+        <tr>
+            <td>JobID</td>
+            <td>@{pipeline().parameters.job_id}</td>
+        </tr>
+        <tr>
+            <td>Status</td>
+            <td><span style='color:Red';>In Progress</span></td>
+        </tr>
+        <tr>
+            <td>Scheduled</td>
+            <td>@{pipeline().TriggerType}</td>
+        </tr>
+        <tr>
+            <td>LoadID</td>
+            <td>@{pipeline().RunId}</td>
+        </tr>
+        <tr>
+            <td>JobStart</td>
+            <td>@{variables('start_time')}</td>
+        </tr>
+    </table><br/><br/><br/>
+    
+    <p>Clever Studies team.</p>
+</body>
+</html>
+    "
+}

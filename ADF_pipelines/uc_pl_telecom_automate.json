@@ -1,0 +1,137 @@
+{
+	"name": "uc_pl_telecom_automate",
+	"properties": {
+		"activities": [
+			{
+				"name": "run_uc_sync_notebook",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/rbac_uc/sync_schema_hive_to_uc_scripts",
+					"baseParameters": {
+						"env": {
+							"value": "@pipeline().globalParameters.env",
+							"type": "Expression"
+						},
+						"sync_schema_yes_or_no": {
+							"value": "no",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks_compute",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "uc_table_lookup",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "run_uc_sync_notebook",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureDatabricksDeltaLakeSource",
+						"query": {
+							"value": "@concat('select * from ',pipeline().parameters.metadata_database,'.tbl_rbac_uc_aad_groups where env = ',pipeline().globalParameters.env,' and access_type in (\"grant\",\"revoke\")')",
+							"type": "Expression"
+						}
+					},
+					"dataset": {
+						"referenceName": "ds_metadata_adb_deltalake",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "for_each_value_uc_tbl",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "uc_table_lookup",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('uc_table_lookup').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "uc_access_notebook",
+							"type": "DatabricksNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/rbac_uc/uc_access",
+								"baseParameters": {
+									"env": {
+										"value": "@pipeline().globalParameters.env",
+										"type": "Expression"
+									},
+									"aad_group_name": {
+										"value": "@activity('uc_table_lookup').output.value[0].aad_group_name",
+										"type": "Expression"
+									},
+									"access_type": {
+										"value": "@activity('uc_table_lookup').output.value[0].access_type",
+										"type": "Expression"
+									},
+									"access_status": {
+										"value": "@activity('uc_table_lookup').output.value[0].access_status",
+										"type": "Expression"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_databricks_compute",
+								"type": "LinkedServiceReference"
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"metadata_database": {
+				"type": "string",
+				"defaultValue": "metadata_schema"
+			}
+		},
+		"annotations": []
+	}
+}

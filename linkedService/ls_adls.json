@@ -1,0 +1,10 @@
+{
+	"name": "ls_adls",
+	"properties": {
+		"annotations": [],
+		"type": "AzureBlobFS",
+		"typeProperties": {
+			"url": "https://csadlsgen2project2.dfs.core.windows.net/"
+		}
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"name": "ls_databricks_deltalake",
+	"properties": {
+		"annotations": [],
+		"type": "AzureDatabricksDeltaLake",
+		"typeProperties": {
+			"domain": "https://adb-2083073995223678.18.azuredatabricks.net",
+			"clusterId": "1015-082224-6788bbo0",
+			"workspaceResourceId": "/subscriptions/ef2a24ec-90c9-4008-a1bc-d500d70bbf79/resourceGroups/CS-Dev-environment/providers/Microsoft.Databricks/workspaces/CS-AzureDatabricks-dev"
+		}
+	}
+}

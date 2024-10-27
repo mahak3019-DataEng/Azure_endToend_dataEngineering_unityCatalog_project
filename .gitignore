@@ -1,0 +1,58 @@
+# Python
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Azure Data Factory artifacts
+# *.json
+*.log
+
+# Databricks
+*.dbc
+*.db
+
+# Azure Key Vault
+*.cer
+*.pem
+
+# Azure DevOps
+*.tar.gz
+# *.zip
+*.egg-info/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# Pytest
+.cache/
+*.cover
+*.coverage
+
+# Data files
+# *.csv
+# *.parquet
+# *.json
+# *.xml
+# *.tsv
+
+# Ignore local configuration files
+*.local
+
+# System files
+.DS_Store
+Thumbs.db

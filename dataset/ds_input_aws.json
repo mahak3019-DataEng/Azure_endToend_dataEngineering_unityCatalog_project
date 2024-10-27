@@ -1,0 +1,47 @@
+{
+	"name": "ds_input_aws",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_amazonS3",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"bucket": {
+				"type": "string",
+				"defaultValue": "telecom-adf"
+			},
+			"folder": {
+				"type": "string",
+				"defaultValue": "telecom/dim_cities"
+			},
+			"file": {
+				"type": "string",
+				"defaultValue": "*"
+			}
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AmazonS3Location",
+				"bucketName": {
+					"value": "@dataset().bucket",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@dataset().folder",
+					"type": "Expression"
+				},
+				"fileName": {
+					"value": "@dataset().file",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	}
+}

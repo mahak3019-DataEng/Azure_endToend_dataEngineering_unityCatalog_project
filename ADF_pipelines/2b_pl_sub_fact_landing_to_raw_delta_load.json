@@ -1,0 +1,195 @@
+{
+	"name": "2b_pl_sub_fact_landing_to_raw_delta_load",
+	"properties": {
+		"activities": [
+			{
+				"name": "dim_landing_to_raw",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/databricks_notebooks/dim_landing_to_raw",
+					"baseParameters": {
+						"env": {
+							"value": "@pipeline().globalParameters.env",
+							"type": "Expression"
+						},
+						"raw_schema": {
+							"value": "@pipeline().parameters.metadata_lookup_values[0].raw_schema",
+							"type": "Expression"
+						},
+						"raw_table": {
+							"value": "@pipeline().parameters.metadata_lookup_values[0].raw_tbl",
+							"type": "Expression"
+						},
+						"source_file_name": {
+							"value": "@pipeline().parameters.source_file_name",
+							"type": "Expression"
+						},
+						"storage_account_name": {
+							"value": "@pipeline().parameters.metadata_lookup_values[0].storage_account",
+							"type": "Expression"
+						},
+						"container_name": {
+							"value": "@pipeline().parameters.metadata_lookup_values[0].container_name",
+							"type": "Expression"
+						},
+						"loadId": {
+							"value": "@pipeline()?.TriggeredByPipelineRunId",
+							"type": "Expression"
+						},
+						"aws_last_modified_time": {
+							"value": "@pipeline().parameters.source_file_last_modified_time",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks_compute",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "dim_log_success_landing_to_raw",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "dim_landing_to_raw",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/databricks_notebooks/log_record_tbl_insert",
+					"baseParameters": {
+						"env": {
+							"value": "@pipeline().globalParameters.env",
+							"type": "Expression"
+						},
+						"storage_account_name": {
+							"value": "@pipeline().parameters.metadata_lookup_values[0].storage_account",
+							"type": "Expression"
+						},
+						"pipelineName": {
+							"value": "@pipeline().Pipeline",
+							"type": "Expression"
+						},
+						"logMessage": {
+							"value": "@concat('Source file contains ',activity('dim_landing_to_raw').output.runOutput[0],' records and inserted records are ',activity('dim_landing_to_raw').output.runOutput[1])",
+							"type": "Expression"
+						},
+						"status": {
+							"value": "Success",
+							"type": "Expression"
+						},
+						"triggerType": {
+							"value": "@pipeline().TriggerType",
+							"type": "Expression"
+						},
+						"loadId": {
+							"value": "@pipeline()?.TriggeredByPipelineRunId",
+							"type": "Expression"
+						},
+						"logTimestamp": {
+							"value": "@formatDateTime(convertFromUtc(utcNow(),'India Standard Time'), 'yyyy-MM-dd HH:mm:ss')",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks_compute",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "dim_log_failure_landing_to_raw",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "dim_landing_to_raw",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/databricks_notebooks/log_record_tbl_insert",
+					"baseParameters": {
+						"env": {
+							"value": "@pipeline().globalParameters.env",
+							"type": "Expression"
+						},
+						"storage_account_name": {
+							"value": "@pipeline().parameters.metadata_lookup_values[0].storage_account",
+							"type": "Expression"
+						},
+						"pipelineName": {
+							"value": "@pipeline().Pipeline",
+							"type": "Expression"
+						},
+						"logMessage": {
+							"value": "@concat('Error: File not transfered from landing to raw container ',pipeline().parameters.source_file_name)",
+							"type": "Expression"
+						},
+						"status": {
+							"value": "@concat('Error: ', activity('dim_landing_to_raw').Error.message)",
+							"type": "Expression"
+						},
+						"triggerType": {
+							"value": "@pipeline().TriggerType",
+							"type": "Expression"
+						},
+						"loadId": {
+							"value": "@pipeline()?.TriggeredByPipelineRunId",
+							"type": "Expression"
+						},
+						"logTimestamp": {
+							"value": "@formatDateTime(convertFromUtc(utcNow(),'India Standard Time'), 'yyyy-MM-dd HH:mm:ss')",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks_compute",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"metadata_lookup_values": {
+				"type": "object"
+			},
+			"source_file_last_modified_time": {
+				"type": "string"
+			},
+			"source_file_name": {
+				"type": "string"
+			}
+		},
+		"annotations": []
+	}
+}
