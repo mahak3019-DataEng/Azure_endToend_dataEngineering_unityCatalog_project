@@ -55,7 +55,7 @@ This project employs a range of Azure services, including Azure Data Factory, Da
 
 ### Authentication
 
-- **System Assigned Managed Identity, Service Principal, or Access Token, secret scope, Unity Catalog access**
+- **System Assigned Managed Identity, Service Principal, or Access Token, Secret Scope, Unity Catalog access**
 
 ### Performance Optimization Techniques
 
